@@ -1,0 +1,114 @@
+// * source: https://stackoverflow.com/questions/10807936/how-do-i-search-google-spreadsheets?noredirect=1&lq=1
+// search tool with a graphical user interface that performs a global search in 3 columns of a single sheet. It could be easily modified to suit your needs. I guess it would be a good idea to add an anchor in the UI to let you open the url you just found. Here is the code, hoping it will help you to design your own version.
+// UPDATE NOTE: : see added the anchor widget in the code below (getting its ref in column E)
+
+// G. Variables
+var sh = SpreadsheetApp.getActiveSheet();
+var ss = SpreadsheetApp.getActiveSpreadsheet();
+var lastrow = ss.getLastRow();
+//
+function onOpen() {
+  var menuEntries = [ {name: "Search GUI", functionName: "searchUI"},
+                     ];
+  ss.addMenu("Search Utilities",menuEntries);// custom menu
+}
+// Build a simple UI to enter search item and show results + activate result's row
+function searchUI() {
+  var app = UiApp.createApplication().setHeight(130).setWidth(400);
+  app.setTitle("Search by name / lastname / adress");
+  var panel = app.createVerticalPanel();
+  var txtBox = app.createTextBox().setFocus(true);
+  var label=app.createLabel(" Item to search for :")
+  panel.add(label);
+  txtBox.setId("item").setName("item");
+  var label0=app.createLabel("Row").setWidth("40");
+  var label1=app.createLabel("Name").setWidth("120");
+  var label2=app.createLabel("Lastname").setWidth("120");
+  var label3=app.createLabel("Street").setWidth("120");
+  var hpanel = app.createHorizontalPanel();
+  hpanel.add(label0).add(label1).add(label2).add(label3)
+//
+  var txt0=app.createTextBox().setId("lab0").setName("0").setWidth("40");
+  var txt1=app.createTextBox().setId("lab1").setName("txt1").setWidth("120");
+  var txt2=app.createTextBox().setId("lab2").setName("txt2").setWidth("120");
+  var txt3=app.createTextBox().setId("lab3").setName("txt3").setWidth("120");
+  var hpanel2 = app.createHorizontalPanel();
+  hpanel2.add(txt0).add(txt1).add(txt2).add(txt3)
+  var hidden = app.createHidden().setName("hidden").setId("hidden");
+  var subbtn = app.createButton("next ?").setId("next").setWidth("250");
+  var link = app.createAnchor('', '').setId('link');
+  panel.add(txtBox);
+  panel.add(subbtn);
+  panel.add(hidden);
+  panel.add(hpanel);
+  panel.add(hpanel2);
+  panel.add(link);
+  var keyHandler = app.createServerHandler("click");
+  txtBox.addKeyUpHandler(keyHandler)
+  keyHandler.addCallbackElement(panel);
+//
+  var submitHandler = app.createServerHandler("next");
+  subbtn.addClickHandler(submitHandler);
+  submitHandler.addCallbackElement(panel);
+//
+  app.add(panel);  
+  ss.show(app);
+  }
+//
+function click(e){
+   var row=ss.getActiveRange().getRowIndex();              
+   var app = UiApp.getActiveApplication();
+   var txtBox = app.getElementById("item");
+   var subbtn = app.getElementById("next").setText("next ?")      
+   var txt0=app.getElementById("lab0").setText('--');
+   var txt1=app.getElementById("lab1").setText('no match').setStyleAttribute("background", "white");// default value to start with
+   var txt2=app.getElementById("lab2").setText('');
+   var txt3=app.getElementById("lab3").setText('');
+   var link=app.getElementById('link').setText('').setHref('')
+   var item=e.parameter.item.toLowerCase(); // item to search for
+   var hidden=app.getElementById("hidden")                  
+   var data = sh.getRange(2,2,lastrow,4).getValues();// get the 4 columns of data
+       for(nn=0;nn<data.length;++nn){ ;// iterate trough
+         if(data[nn].toString().toLowerCase().match(item.toString())==item.toString()&&item!=''){;// if a match is found in one of the 4 fields, break the loop and show results
+          txt0.setText(nn+2);
+          txt1.setText(data[nn][0]).setStyleAttribute("background", "cyan");
+          txt2.setText(data[nn][1]);
+          txt3.setText(data[nn][2]);
+          link.setText(data[nn][3]).setHref(data[nn][3]);
+          sh.getRange(nn+2,2).activate();
+          subbtn.setText("found '"+item+"' in row "+Number(nn+2)+", next ?");
+          hidden.setValue(nn.toString())                                                                                  
+          break
+          }
+      }
+return app    ;// update UI
+}
+function next(e){
+   var row=ss.getActiveRange().getRowIndex();              
+   var app = UiApp.getActiveApplication();
+   var txtBox = app.getElementById("item");
+   var subbtn = app.getElementById("next").setText("no other match")      
+   var hidden=app.getElementById("hidden");                  
+   var start=Number(e.parameter.hidden)+1;//returns the last search index stored in the UI
+   var item=e.parameter.item.toLowerCase(); // item to search for
+   var txt0=app.getElementById("lab0");
+   var txt1=app.getElementById("lab1").setStyleAttribute("background", "yellow");
+   var txt2=app.getElementById("lab2");
+   var txt3=app.getElementById("lab3");
+   var link=app.getElementById('link').setText('').setHref('')
+   var data = sh.getRange(2,2,lastrow,4).getValues();// get the 4 columns of data
+       for(nn=start;nn<data.length;++nn){ ;// iterate trough
+         if(data[nn].toString().toLowerCase().match(item.toString())==item.toString()&&item!=''){;// if a match is found in one of the 4 fields, break the loop and show results
+          txt0.setText(nn+2);
+          txt1.setText(data[nn][0]).setStyleAttribute("background", "cyan");
+          txt2.setText(data[nn][1]);
+          txt3.setText(data[nn][2]);
+          link.setText(data[nn][3]).setHref(data[nn][3])
+          sh.getRange(nn+2,2).activate();
+          subbtn.setText("found '"+item+"' in row "+Number(nn+2)+", next ?");                                                                                               
+          hidden.setValue(nn.toString())                                                                                  
+          break
+          }
+      }
+return app    ;// update UI
+}// eof 05-12 Serge insas
